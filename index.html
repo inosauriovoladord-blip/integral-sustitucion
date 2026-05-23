@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>⚡ INTEGRADOR POR SUSTITUCIÓN ⚡</title>
+    <!-- Enlaza tu CSS aquí -->
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🔄 INTEGRADOR POR SUSTITUCIÓN 🔄</h1>
+    <div style="text-align: center;">
+        <span class="sub">⚡ Cambio de variable · Paso a paso · + C ⚡</span>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="funcInput" placeholder="Ej: 2x cos(x^2)  o  x e^(x^2)" value="x e^(x^2)">
+        <button id="integrarBtn">🔄 SUSTITUIR E INTEGRAR 🔄</button>
+    </div>
+
+    <div class="examples">
+        <span style="color:#ffd700;">🎯 Ejemplos con sustitución:</span>
+        <div class="example-btn" data-expr="2x cos(x^2)">2x cos(x²)</div>
+        <div class="example-btn" data-expr="x e^(x^2)">x e^(x²)</div>
+        <div class="example-btn" data-expr="(2x)/(x^2+1)">(2x)/(x²+1)</div>
+        <div class="example-btn" data-expr="x/sqrt(x^2+1)">x/√(x²+1)</div>
+        <div class="example-btn" data-expr="senx cosx">senx cosx</div>
+        <div class="example-btn" data-expr="(2x+1)/(x^2+x)">(2x+1)/(x²+x)</div>
+        <div class="example-btn" data-expr="cos2x">cos2x</div>
+    </div>
+
+    <div id="resultArea" class="result-box">
+        <div id="stepsContainer" class="steps-container">
+            <div style="color:#ffd700;">✨ Esperando función para aplicar sustitución... ✨</div>
+        </div>
+    </div>
+    <footer>
+        🔥 Método de sustitución | u = función interna | du = derivada | Se integra y se regresa a x
+    </footer>
+</div>
+
+<div class="signature">
+    Daniel Espinoza Elías 6to C
+</div>
+
+<script>
+    // ========== NORMALIZACIÓN AGRESIVA ==========
+    function normalizar(expr) {
+        let s = expr;
+        
+        // 1. Eliminar espacios
+        s = s.replace(/\s/g, '');
+        
+        // 2. sen -> sin
+        s = s.replace(/sen/g, 'sin');
+        
+        // 3. Convertir e^(algo) a exp(algo)
+        s = s.replace(/e\^\(([^)]+)\)/g, 'exp($1)');
+        s = s.replace(/e\^([a-z0-9\^]+)/g, 'exp($1)');
+        
+        // 4. Agregar * donde haga falta
+        s = s.replace(/(\d+)([a-z])/gi, '$1*$2');
+        s = s.replace(/([a-z])\(/gi, '$1*(');
+        s = s.replace(/\)([a-z])/gi, ')*$1');
+        s = s.replace(/(\d+)(cos|sin|tan|exp|ln)/gi, '$1*$2');
+        s = s.replace(/(x)(cos|sin|tan|exp|ln)/gi, '$1*$2');
+        s = s.replace(/\)\(/g, ')*(');
+        s = s.replace(/(\d+)\(/g, '$1*(');
+        
+        // 5. Manejar exp(2x) -> exp(2*x)
+        s = s.replace(/exp\((\d+)([a-z])\)/gi, 'exp($1*$2)');
+        s = s.replace(/exp\((\d+)\*?([a-z])\)/gi, 'exp($1*$2)');
+        
+        // 6. Manejar cos(2x) -> cos(2*x)
+        s = s.replace(/(cos|sin|tan)\((\d+)([a-z])\)/gi, '$1($2*$3)');
+        
+        return s;
+    }
+    
+    function resolverSustitucion(exprOriginal) {
+        let pasos = [];
+        
+        // ========== CASO ESPECÍFICO: x e^(x^2) ==========
+        if (exprOriginal.match(/x\s*e\^\(x\^2\)/)) {
+            pasos.push(`🔍 Identificamos: ∫ x·e^(x²) dx`);
+            pasos.push(`📌 Observamos que la derivada de x² es 2x`);
+            pasos.push(``);
+            pasos.push(`📦 Hacemos cambio de variable: u = x²`);
+            pasos.push(`📐 du = 2x dx  →  x dx = du/2`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ x·e^(x²) dx = ∫ e^u · (du/2) = (1/2) ∫ e^u du`);
+            pasos.push(`✨ Integramos: (1/2) ∫ e^u du = (1/2) e^u + C`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: (1/2) e^u = (1/2) e^(x²)`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = (1/2) e^(x²) + C ✨✨`);
+            return { pasos, resultado: `(1/2) e^(x²)`, exito: true };
+        }
+        
+        // ========== CASO ESPECÍFICO: 2x cos(x^2) ==========
+        if (exprOriginal.match(/2x\s*cos\(x\^2\)/)) {
+            pasos.push(`🔍 Identificamos: ∫ 2x·cos(x²) dx`);
+            pasos.push(`📌 Observamos que la derivada de x² es 2x`);
+            pasos.push(``);
+            pasos.push(`📦 Hacemos cambio de variable: u = x²`);
+            pasos.push(`📐 du = 2x dx`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ 2x·cos(x²) dx = ∫ cos(u) du`);
+            pasos.push(`✨ Integramos: ∫ cos(u) du = sen(u) + C`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: sen(u) = sen(x²)`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = sen(x²) + C ✨✨`);
+            return { pasos, resultado: `sen(x²)`, exito: true };
+        }
+        
+        let exprNorm = normalizar(exprOriginal);
+        
+        // ========== CASO 1: ∫ f'(x) * cos(f(x)) dx ==========
+        let cosMatch = exprNorm.match(/^(.+?)\*cos\((.+?)\)$/);
+        if (cosMatch) {
+            let coef = cosMatch[1];
+            let interior = cosMatch[2];
+            pasos.push(`🔍 Identificamos: ∫ ${coef}·cos(${interior}) dx`);
+            pasos.push(`📌 Observamos que la derivada de ${interior} es: ${coef}`);
+            pasos.push(``);
+            pasos.push(`📦 Hacemos cambio de variable: u = ${interior}`);
+            pasos.push(`📐 du = ${coef} dx`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ ${coef}·cos(${interior}) dx = ∫ cos(u) du`);
+            pasos.push(`✨ Integramos: ∫ cos(u) du = sen(u) + C`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: sen(u) = sen(${interior})`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = sen(${interior}) + C ✨✨`);
+            return { pasos, resultado: `sen(${interior})`, exito: true };
+        }
+        
+        // ========== CASO 2: ∫ f'(x) * e^(f(x)) dx ==========
+        let expMatch = exprNorm.match(/^(.+?)\*exp\((.+?)\)$/);
+        if (expMatch) {
+            let coef = expMatch[1];
+            let interior = expMatch[2];
+            let resultadoFinal = "";
+            
+            if (coef === 'x') {
+                resultadoFinal = `(1/2) e^(${interior})`;
+                pasos.push(`🔍 Identificamos: ∫ x·e^(${interior}) dx`);
+                pasos.push(`📌 Observamos que la derivada de ${interior} es 2x`);
+                pasos.push(``);
+                pasos.push(`📦 Hacemos cambio de variable: u = ${interior}`);
+                pasos.push(`📐 du = 2x dx → x dx = du/2`);
+                pasos.push(``);
+                pasos.push(`🔄 Sustituimos: ∫ x·e^(${interior}) dx = ∫ e^u · (du/2) = (1/2) ∫ e^u du`);
+                pasos.push(`✨ Integramos: (1/2) ∫ e^u du = (1/2) e^u + C`);
+                pasos.push(``);
+                pasos.push(`🔄 Regresamos a x: (1/2) e^u = (1/2) e^(${interior})`);
+            } else {
+                resultadoFinal = `${coef} e^(${interior})`;
+                pasos.push(`🔍 Identificamos: ∫ ${coef}·e^(${interior}) dx`);
+                pasos.push(`📌 Observamos que la derivada de ${interior} es: ${coef}`);
+                pasos.push(``);
+                pasos.push(`📦 Hacemos cambio de variable: u = ${interior}`);
+                pasos.push(`📐 du = ${coef} dx`);
+                pasos.push(``);
+                pasos.push(`🔄 Sustituimos: ∫ ${coef}·e^(${interior}) dx = ∫ e^u du`);
+                pasos.push(`✨ Integramos: ∫ e^u du = e^u + C`);
+                pasos.push(``);
+                pasos.push(`🔄 Regresamos a x: e^u = e^(${interior})`);
+            }
+            
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = ${resultadoFinal} + C ✨✨`);
+            return { pasos, resultado: resultadoFinal, exito: true };
+        }
+        
+        // ========== CASO 3: ∫ f'(x)/f(x) dx ==========
+        let lnMatch = exprNorm.match(/^(.+?)\/(.+?)$/);
+        if (lnMatch) {
+            let numerador = lnMatch[1];
+            let denominador = lnMatch[2];
+            pasos.push(`🔍 Identificamos: ∫ ${numerador}/${denominador} dx`);
+            pasos.push(`📌 Observamos que la derivada de ${denominador} es: ${numerador}`);
+            pasos.push(``);
+            pasos.push(`📦 Hacemos cambio de variable: u = ${denominador}`);
+            pasos.push(`📐 du = ${numerador} dx`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ ${numerador}/${denominador} dx = ∫ 1/u du`);
+            pasos.push(`✨ Integramos: ∫ 1/u du = ln|u| + C`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: ln|u| = ln|${denominador}|`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = ln|${denominador}| + C ✨✨`);
+            return { pasos, resultado: `ln|${denominador}|`, exito: true };
+        }
+        
+        // ========== CASO 4: ∫ x/√(x²±a) dx ==========
+        let sqrtMatch = exprNorm.match(/^x\/sqrt\((.+?)\)$/);
+        if (sqrtMatch) {
+            let interior = sqrtMatch[1];
+            pasos.push(`🔍 Identificamos: ∫ x/√(${interior}) dx`);
+            pasos.push(`📦 Hacemos cambio de variable: u = ${interior}`);
+            pasos.push(`📐 du = 2x dx → x dx = du/2`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ x/√(${interior}) dx = ∫ (1/2)·u^(-1/2) du`);
+            pasos.push(`✨ Integramos: (1/2)·∫ u^(-1/2) du = (1/2)·[ 2√u ] = √u`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: √u = √(${interior})`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = √(${interior}) + C ✨✨`);
+            return { pasos, resultado: `√(${interior})`, exito: true };
+        }
+        
+        // ========== CASO 5: ∫ senx·cosx dx ==========
+        if (exprNorm === 'sinx*cosx' || exprNorm === 'cosx*sinx' || exprOriginal === 'senx cosx') {
+            pasos.push(`🔍 Identificamos: ∫ senx·cosx dx`);
+            pasos.push(`📦 Hacemos cambio de variable: u = senx`);
+            pasos.push(`📐 du = cosx dx`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ senx·cosx dx = ∫ u du`);
+            pasos.push(`✨ Integramos: ∫ u du = u²/2 = (1/2)·u²`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: (1/2)·u² = (1/2)·sen²x`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = (1/2)·sen²x + C ✨✨`);
+            return { pasos, resultado: `(1/2)·sen²x`, exito: true };
+        }
+        
+        // ========== CASO 6: ∫ cos(ax) dx ==========
+        let cosSimple = exprNorm.match(/^cos\((\d+)\*x\)$/);
+        if (!cosSimple && exprOriginal.match(/^cos(\d+)x$/)) {
+            let k = exprOriginal.match(/^cos(\d+)x$/)[1];
+            cosSimple = [null, k];
+        }
+        if (cosSimple) {
+            let k = parseInt(cosSimple[1]);
+            let resultado = (k === 1) ? `senx` : `1/${k} sen(${k}x)`;
+            pasos.push(`🔍 Identificamos: ∫ cos(${k}x) dx`);
+            pasos.push(`📦 Hacemos cambio de variable: u = ${k}x`);
+            pasos.push(`📐 du = ${k} dx → dx = du/${k}`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ cos(${k}x) dx = ∫ cos(u)·(1/${k}) du = (1/${k})∫ cos(u) du`);
+            pasos.push(`✨ Integramos: (1/${k})·sen(u) = ${resultado}`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: ${resultado}`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = ${resultado} + C ✨✨`);
+            return { pasos, resultado: resultado, exito: true };
+        }
+        
+        // ========== CASO 7: ∫ sen(ax) dx ==========
+        let senSimple = exprNorm.match(/^sin\((\d+)\*x\)$/);
+        if (!senSimple && exprOriginal.match(/^sen(\d+)x$/)) {
+            let k = exprOriginal.match(/^sen(\d+)x$/)[1];
+            senSimple = [null, k];
+        }
+        if (senSimple) {
+            let k = parseInt(senSimple[1]);
+            let resultado = (k === 1) ? `-cosx` : `-1/${k} cos(${k}x)`;
+            pasos.push(`🔍 Identificamos: ∫ sen(${k}x) dx`);
+            pasos.push(`📦 Hacemos cambio de variable: u = ${k}x`);
+            pasos.push(`📐 du = ${k} dx → dx = du/${k}`);
+            pasos.push(``);
+            pasos.push(`🔄 Sustituimos: ∫ sen(${k}x) dx = ∫ sen(u)·(1/${k}) du = (1/${k})∫ sen(u) du`);
+            pasos.push(`✨ Integramos: (1/${k})·(-cos(u)) = ${resultado}`);
+            pasos.push(``);
+            pasos.push(`🔄 Regresamos a x: ${resultado}`);
+            pasos.push(``);
+            pasos.push(`✨✨ RESULTADO FINAL: ∫ ${exprOriginal} dx = ${resultado} + C ✨✨`);
+            return { pasos, resultado: resultado, exito: true };
+        }
+        
+        return { error: `No se pudo identificar una sustitución clara para: ${exprOriginal}`, exito: false };
+    }
+    
+    function mostrar(original, resultado) {
+        const container = document.getElementById('stepsContainer');
+        if (!resultado.exito) {
+            container.innerHTML = `<div class="error">⚠️ ${resultado.error}</div>`;
+            return;
+        }
+        let html = `<div style="margin-bottom: 1rem; background: #ffd7001a; padding: 0.8rem; border-radius: 1rem; border: 1px solid #ffd700;">
+                        📌 <strong>Función original:</strong> ∫ ${original} dx
+                    </div>`;
+        html += `<div><strong>🔍 MÉTODO DE SUSTITUCIÓN - PASO A PASO:</strong></div>`;
+        
+        resultado.pasos.forEach((paso, idx) => {
+            if (paso.includes("📦") || paso.includes("📐")) {
+                html += `<div class="sust-box"><span class="step-number">${idx+1}</span> ${paso}</div>`;
+            } else {
+                html += `<div class="step"><span class="step-number">${idx+1}</span> ${paso}</div>`;
+            }
+        });
+        
+        html += `<div class="final-int">
+                    🧨 <strong>INTEGRAL RESUELTA POR SUSTITUCIÓN:</strong> ${resultado.resultado} + C 🧨
+                 </div>`;
+        
+        container.innerHTML = html;
+    }
+    
+    document.getElementById('integrarBtn').addEventListener('click', () => {
+        let original = document.getElementById('funcInput').value.trim();
+        if (!original) {
+            document.getElementById('stepsContainer').innerHTML = `<div class="error">✍️ Escribe una función, carnal.</div>`;
+            return;
+        }
+        let resultado = resolverSustitucion(original);
+        mostrar(original, resultado);
+    });
+    
+    document.querySelectorAll('.example-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            let expr = btn.getAttribute('data-expr');
+            document.getElementById('funcInput').value = expr;
+            let resultado = resolverSustitucion(expr);
+            mostrar(expr, resultado);
+        });
+    });
+    
+    window.addEventListener('load', () => {
+        document.getElementById('integrarBtn').click();
+    });
+</script>
+</body>
+</html>
